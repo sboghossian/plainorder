@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PlainOrder — Court orders, in plain English.</title>
+<meta name="description" content="Paste any court order. Get a plain-English explanation, a list of action items, and a calendar of every deadline. Not legal advice." />
+<meta property="og:title" content="PlainOrder" />
+<meta property="og:description" content="Court orders, in plain English. With deadlines, on a calendar." />
+<link rel="preconnect" href="https://cdn.tailwindcss.com" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Tailwind config kept inline so the page works without a build step.
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          serif: ['Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        },
+        colors: {
+          ink: '#1a1a1a',
+          paper: '#fafaf7',
+          accent: '#2c5e2e',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  body { background: #fafaf7; color: #1a1a1a; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  .doc { font-family: Georgia, Cambria, 'Times New Roman', serif; }
+  textarea { resize: vertical; }
+  .deadline-pill { background: #fff7e6; border: 1px solid #f0c674; }
+  .action-item::marker { color: #2c5e2e; font-weight: bold; }
+  .skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: shimmer 1.4s ease-in-out infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+</style>
+</head>
+<body class="min-h-screen">
+<header class="max-w-3xl mx-auto px-4 pt-10 pb-6">
+  <div class="flex items-baseline justify-between">
+    <h1 class="text-3xl font-semibold tracking-tight">PlainOrder</h1>
+    <span class="text-xs text-gray-500">v0.1 · experimental</span>
+  </div>
+  <p class="mt-2 text-gray-700 text-lg">Court orders, in plain English. With deadlines, on a calendar.</p>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 pb-24">
+  <!-- Disclaimer -->
+  <div class="bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-md p-3 text-sm mb-6">
+    <strong>Not legal advice.</strong> PlainOrder uses AI to summarize the document you paste. It can be wrong, and it does not know the rules of your specific court. If anything is unclear or important, talk to a lawyer or your local legal aid office before acting.
+  </div>
+
+  <!-- Input -->
+  <section id="input-section">
+    <label for="docInput" class="block font-medium mb-2">Paste the court document</label>
+    <textarea id="docInput" rows="12"
+      class="w-full p-3 border border-gray-300 rounded-md doc text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+      placeholder="Paste the full text of the order, ruling, or notice here. The more complete, the better the explanation."></textarea>
+    <div class="mt-3 flex items-center justify-between">
+      <span id="charCount" class="text-xs text-gray-500">0 characters</span>
+      <button id="translateBtn"
+        class="bg-accent text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled>
+        Translate
+      </button>
+    </div>
+    <p class="mt-2 text-xs text-gray-500">5 free translations per day. No login. We don't save your document.</p>
+  </section>
+
+  <!-- Status / Error -->
+  <div id="statusBox" class="mt-6 hidden"></div>
+
+  <!-- Result -->
+  <section id="resultSection" class="mt-10 hidden">
+    <h2 class="text-xl font-semibold mb-4 border-b pb-2">Your order, in plain English</h2>
+    <div id="summaryBlock" class="prose max-w-none text-base leading-relaxed mb-8"></div>
+
+    <h3 class="text-lg font-semibold mb-3">What you need to do</h3>
+    <ol id="actionsList" class="list-decimal pl-6 space-y-2 mb-8 action-item"></ol>
+
+    <h3 class="text-lg font-semibold mb-3">Deadlines</h3>
+    <ul id="deadlinesList" class="space-y-2 mb-4"></ul>
+    <div id="icsBlock" class="hidden">
+      <button id="downloadIcsBtn" class="text-sm underline text-accent hover:text-green-800">
+        Download all deadlines as a calendar file (.ics)
+      </button>
+    </div>
+
+    <div class="mt-10 pt-4 border-t text-xs text-gray-500">
+      <strong>Reminder.</strong> This is an AI summary. Read the original document yourself. If anything is unclear or seems wrong, contact a lawyer or your local legal aid office before the earliest deadline above.
+    </div>
+  </section>
+</main>
+
+<footer class="max-w-3xl mx-auto px-4 py-8 text-xs text-gray-500 border-t">
+  <p>PlainOrder is an open-source experiment. Built with the <a class="underline" href="https://openrouter.ai">OpenRouter</a> API and Cloudflare. <a class="underline" href="https://github.com/sboghossian/plainorder">Source on GitHub</a>.</p>
+  <p class="mt-1">Need help? Find your nearest <a class="underline" href="https://www.lsc.gov/about-lsc/what-legal-aid/get-legal-help">legal aid office</a> (US).</p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

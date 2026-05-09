@@ -1,0 +1,25 @@
+name = "plainorder"
+main = "src/index.ts"
+compatibility_date = "2026-05-09"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets are served by Cloudflare Pages from ../public; the Worker
+# only handles /api/*. When we wire this up to Pages we'll add the
+# routing rule there. For local dev (wrangler dev), the static page is
+# served by a simple sibling python -m http.server on :8787 and the
+# Worker proxies to it via its assets binding. See README for details.
+
+[assets]
+directory = "../public"
+binding = "ASSETS"
+
+# Per-IP rate limiting uses a KV namespace. Create it once with:
+#   wrangler kv namespace create RATELIMIT
+# then paste the returned id into the line below.
+# [[kv_namespaces]]
+# binding = "RATELIMIT"
+# id = "PASTE_KV_NAMESPACE_ID_HERE"
+
+# Secrets — set with:
+#   wrangler secret put OPENROUTER_API_KEY
+# Do NOT commit the key.
