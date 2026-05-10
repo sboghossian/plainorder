@@ -18,7 +18,18 @@ export interface OpenRouterEnv {
   PLAINORDER_SITE_URL?: string;
 }
 
-export async function translateDocument(env: OpenRouterEnv, documentText: string): Promise<string> {
+export type SupportedLang = 'en' | 'es';
+
+const LANG_LABEL: Record<SupportedLang, string> = {
+  en: 'English',
+  es: 'Spanish (español)',
+};
+
+export async function translateDocument(
+  env: OpenRouterEnv,
+  documentText: string,
+  lang: SupportedLang = 'en',
+): Promise<string> {
   const model = env.PLAINORDER_MODEL || DEFAULT_MODEL;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -28,10 +39,11 @@ export async function translateDocument(env: OpenRouterEnv, documentText: string
   if (env.PLAINORDER_SITE_URL) {
     headers['HTTP-Referer'] = env.PLAINORDER_SITE_URL;
   }
+  const langDirective = `\n\nIMPORTANT: All string field VALUES in your JSON output (plainEnglish, worstCase, actionItems[].text, deadlines[].what, deadlines[].dateDisplay, deadlines[].notes) MUST be written in ${LANG_LABEL[lang]}. The JSON field NAMES stay in English. Translate plain-language explanations into ${LANG_LABEL[lang]} regardless of the language the source document is in. Use natural ${LANG_LABEL[lang]} phrasing — do not translate word-for-word from English templates.`;
   const body = {
     model,
     messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: SYSTEM_PROMPT + langDirective },
       { role: 'user', content: documentText },
     ],
     temperature: 0.2,

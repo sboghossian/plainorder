@@ -81,15 +81,21 @@
 <header class="max-w-3xl mx-auto px-4 pt-10 pb-6">
   <div class="flex items-baseline justify-between">
     <h1 class="text-3xl font-semibold tracking-tight">PlainOrder</h1>
-    <span class="text-xs text-gray-500">v0.2 · experimental</span>
+    <div class="flex items-center gap-3">
+      <div class="inline-flex rounded-md border border-gray-300 overflow-hidden text-xs no-print" role="group" aria-label="Language">
+        <button type="button" data-lang="en" class="lang-btn px-3 py-1 font-medium hover:bg-gray-100">EN</button>
+        <button type="button" data-lang="es" class="lang-btn px-3 py-1 font-medium hover:bg-gray-100 border-l border-gray-300">ES</button>
+      </div>
+      <span class="text-xs text-gray-500">v0.3 · experimental</span>
+    </div>
   </div>
-  <p class="mt-2 text-gray-700 text-lg">Court orders, in plain English. With a deadline timeline.</p>
+  <p class="mt-2 text-gray-700 text-lg" data-i18n="tagline">Court orders, in plain English. With a deadline timeline.</p>
 </header>
 
 <main class="max-w-3xl mx-auto px-4 pb-24">
   <!-- Disclaimer -->
   <div class="bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-md p-3 text-sm mb-6">
-    <strong>Not legal advice.</strong> PlainOrder uses AI to summarize the document you paste or upload. It can be wrong, and it does not know the rules of your specific court. If anything is unclear or important, talk to a lawyer or your local legal aid office before acting.
+    <strong data-i18n="disclaimer.label">Not legal advice.</strong> <span data-i18n="disclaimer.body">PlainOrder uses AI to summarize the document you paste or upload. It can be wrong, and it does not know the rules of your specific court. If anything is unclear or important, talk to a lawyer or your local legal aid office before acting.</span>
   </div>
 
   <!-- Input -->
@@ -97,25 +103,27 @@
     <div id="dropZone" class="drop-zone p-4 mb-3 text-center cursor-pointer">
       <input id="fileInput" type="file" accept="application/pdf,text/plain,.pdf,.txt" class="hidden" />
       <p class="text-sm text-gray-700">
-        <button id="filePickBtn" type="button" class="underline text-accent font-medium">Upload a PDF or .txt</button>
-        <span class="text-gray-500"> or drag a file here. Or paste text below.</span>
+        <button id="filePickBtn" type="button" class="underline text-accent font-medium" data-i18n="upload.button">Upload a PDF or .txt</button>
+        <span class="text-gray-500" data-i18n="upload.hint"> or drag a file here. Or paste text below.</span>
       </p>
       <p id="fileStatus" class="text-xs text-gray-500 mt-1 hidden"></p>
     </div>
 
-    <label for="docInput" class="block font-medium mb-2">Paste the court document</label>
+    <label for="docInput" class="block font-medium mb-2" data-i18n="paste.label">Paste the court document</label>
     <textarea id="docInput" rows="12"
       class="w-full p-3 border border-gray-300 rounded-md doc text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+      data-i18n-placeholder="paste.placeholder"
       placeholder="Paste the full text of the order, ruling, or notice here. The more complete, the better the explanation."></textarea>
     <div class="mt-3 flex items-center justify-between">
       <span id="charCount" class="text-xs text-gray-500">0 characters</span>
       <button id="translateBtn"
         class="bg-accent text-white px-5 py-2 rounded-md text-sm font-medium hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+        data-i18n="translate.button"
         disabled>
         Translate
       </button>
     </div>
-    <p class="mt-2 text-xs text-gray-500">No login. Your document is sent to OpenRouter for the translation and not stored on our side. PDF text extraction happens in your browser — the PDF file itself never leaves your device.</p>
+    <p class="mt-2 text-xs text-gray-500" data-i18n="privacy.note">No login. Your document is sent to OpenRouter for the translation and not stored on our side. PDF text extraction happens in your browser — the PDF file itself never leaves your device.</p>
   </section>
 
   <!-- Status / Error -->
@@ -124,8 +132,8 @@
   <!-- Result -->
   <section id="resultSection" class="mt-10 hidden">
     <div class="flex items-center justify-between mb-4 border-b pb-2 no-print">
-      <h2 class="text-xl font-semibold">Your order, in plain English</h2>
-      <button id="printBtn" class="text-sm underline text-gray-600 hover:text-accent">Print / Save as PDF</button>
+      <h2 class="text-xl font-semibold" data-i18n="result.heading">Your order, in plain English</h2>
+      <button id="printBtn" class="text-sm underline text-gray-600 hover:text-accent" data-i18n="print.button">Print / Save as PDF</button>
     </div>
 
     <!-- Worst case alert -->
@@ -133,7 +141,7 @@
       <div class="flex items-start gap-2">
         <span class="text-red-700 font-bold text-lg leading-none mt-0.5">⚠</span>
         <div>
-          <div class="text-xs uppercase tracking-wide text-red-700 font-semibold mb-1">If you do nothing</div>
+          <div class="text-xs uppercase tracking-wide text-red-700 font-semibold mb-1" data-i18n="worstcase.heading">If you do nothing</div>
           <div id="worstCaseText" class="text-sm text-red-900"></div>
         </div>
       </div>
@@ -144,33 +152,33 @@
 
     <!-- Deadline timeline -->
     <div id="timelineSection" class="mb-8 hidden">
-      <h3 class="text-lg font-semibold mb-2">Timeline</h3>
+      <h3 class="text-lg font-semibold mb-2" data-i18n="timeline.heading">Timeline</h3>
       <div id="timeline" class="timeline"></div>
-      <p class="text-xs text-gray-500 mt-2">Critical = irreversible if missed. High = important right lost. Normal = procedural.</p>
+      <p class="text-xs text-gray-500 mt-2" data-i18n="timeline.legend">Critical = irreversible if missed. High = important right lost. Normal = procedural.</p>
     </div>
 
     <!-- Action items -->
-    <h3 class="text-lg font-semibold mb-3">What you need to do</h3>
+    <h3 class="text-lg font-semibold mb-3" data-i18n="actions.heading">What you need to do</h3>
     <ol id="actionsList" class="list-decimal pl-6 space-y-2 mb-8"></ol>
 
     <!-- Deadlines -->
-    <h3 class="text-lg font-semibold mb-3">Deadlines</h3>
+    <h3 class="text-lg font-semibold mb-3" data-i18n="deadlines.heading">Deadlines</h3>
     <ul id="deadlinesList" class="space-y-2 mb-4"></ul>
     <div id="icsBlock" class="hidden no-print">
-      <button id="downloadIcsBtn" class="text-sm underline text-accent hover:text-green-800">
+      <button id="downloadIcsBtn" class="text-sm underline text-accent hover:text-green-800" data-i18n="ics.button">
         Download all deadlines as a calendar file (.ics)
       </button>
     </div>
 
     <div class="mt-10 pt-4 border-t text-xs text-gray-500">
-      <strong>Reminder.</strong> This is an AI summary. Read the original document yourself. If anything is unclear or seems wrong, contact a lawyer or your local legal aid office before the earliest deadline above.
+      <strong data-i18n="reminder.label">Reminder.</strong> <span data-i18n="reminder.body">This is an AI summary. Read the original document yourself. If anything is unclear or seems wrong, contact a lawyer or your local legal aid office before the earliest deadline above.</span>
     </div>
   </section>
 </main>
 
 <footer class="max-w-3xl mx-auto px-4 py-8 text-xs text-gray-500 border-t">
-  <p>PlainOrder is an open-source experiment. Built with the <a class="underline" href="https://openrouter.ai">OpenRouter</a> API and Cloudflare. <a class="underline" href="https://github.com/sboghossian/plainorder">Source on GitHub</a>.</p>
-  <p class="mt-1">Need help? Find your nearest <a class="underline" href="https://www.lsc.gov/about-lsc/what-legal-aid/get-legal-help">legal aid office</a> (US).</p>
+  <p data-i18n-html="footer.opensource">PlainOrder is an open-source experiment. Built with the <a class="underline" href="https://openrouter.ai">OpenRouter</a> API and Cloudflare. <a class="underline" href="https://github.com/sboghossian/plainorder">Source on GitHub</a>.</p>
+  <p class="mt-1" data-i18n-html="footer.legalaid">Need help? Find your nearest <a class="underline" href="https://www.lsc.gov/about-lsc/what-legal-aid/get-legal-help">legal aid office</a> (US).</p>
 </footer>
 
 <!-- pdf.js for client-side PDF text extraction. The PDF never leaves the browser. -->

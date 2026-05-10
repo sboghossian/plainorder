@@ -6,7 +6,9 @@
 // any other route      → fall through to the static assets binding (the
 //                         landing page in ../public).
 
-import { translateDocument, type OpenRouterEnv } from './openrouter';
+import { translateDocument, type OpenRouterEnv, type SupportedLang } from './openrouter';
+
+const SUPPORTED_LANGS: ReadonlySet<SupportedLang> = new Set(['en', 'es']);
 import { buildIcs, type IcsEvent } from './ics';
 
 interface Env extends OpenRouterEnv {
@@ -73,11 +75,11 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
     return jsonError(500, 'Server is missing OPENROUTER_API_KEY. Tell the operator.');
   }
 
-  let body: { text?: unknown };
+  let body: { text?: unknown; lang?: unknown };
   try {
-    body = (await request.json()) as { text?: unknown };
+    body = (await request.json()) as { text?: unknown; lang?: unknown };
   } catch {
-    return jsonError(400, 'Body must be JSON: { text: "..." }');
+    return jsonError(400, 'Body must be JSON: { text: "...", lang?: "en"|"es" }');
   }
   const text = typeof body.text === 'string' ? body.text.trim() : '';
   if (text.length < MIN_INPUT_CHARS) {
@@ -86,6 +88,8 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
   if (text.length > MAX_INPUT_CHARS) {
     return jsonError(413, `Document is too long. Max ${MAX_INPUT_CHARS} characters; you sent ${text.length}.`);
   }
+  const langRaw = typeof body.lang === 'string' ? body.lang.toLowerCase() : 'en';
+  const lang: SupportedLang = SUPPORTED_LANGS.has(langRaw as SupportedLang) ? (langRaw as SupportedLang) : 'en';
 
   // Rate limit removed per product decision (2026-05-10). Cost guardrails
   // now live at the OpenRouter account level. Re-enable by importing
@@ -93,7 +97,7 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
 
   let raw: string;
   try {
-    raw = await translateDocument(env, text);
+    raw = await translateDocument(env, text, lang);
   } catch (err) {
     return jsonError(502, `Translation service failed: ${stringifyErr(err)}`);
   }
