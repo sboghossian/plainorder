@@ -7,24 +7,34 @@
 //                         landing page in ../public).
 
 import { translateDocument, type OpenRouterEnv } from './openrouter';
-import { checkAndConsume, type RateLimitEnv } from './rate-limit';
 import { buildIcs, type IcsEvent } from './ics';
 
-interface Env extends OpenRouterEnv, RateLimitEnv {
+interface Env extends OpenRouterEnv {
   ASSETS: Fetcher;
+}
+
+type Urgency = 'now' | 'soon' | 'info';
+type Severity = 'critical' | 'high' | 'normal';
+
+interface ActionItem {
+  text: string;
+  urgency: Urgency;
+}
+
+interface Deadline {
+  what: string;
+  date: string | null;
+  dateDisplay: string;
+  notes?: string;
+  severity: Severity;
 }
 
 interface TranslatePayload {
   plainEnglish: string;
-  actionItems: string[];
-  deadlines: Array<{
-    what: string;
-    date: string | null;
-    dateDisplay: string;
-    notes?: string;
-  }>;
+  worstCase: string;
+  actionItems: ActionItem[];
+  deadlines: Deadline[];
   ics: string;
-  remaining: number;
 }
 
 const MIN_INPUT_CHARS = 50;
@@ -77,10 +87,9 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
     return jsonError(413, `Document is too long. Max ${MAX_INPUT_CHARS} characters; you sent ${text.length}.`);
   }
 
-  const limit = await checkAndConsume(env, request);
-  if (!limit.allowed) {
-    return jsonError(429, 'You have used your 5 free translations for today. Come back tomorrow, or run PlainOrder yourself — the source is open.');
-  }
+  // Rate limit removed per product decision (2026-05-10). Cost guardrails
+  // now live at the OpenRouter account level. Re-enable by importing
+  // checkAndConsume from './rate-limit' and reinstating the gate here.
 
   let raw: string;
   try {
@@ -103,10 +112,10 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
 
   const payload: TranslatePayload = {
     plainEnglish: parsed.value.plainEnglish,
+    worstCase: parsed.value.worstCase,
     actionItems: parsed.value.actionItems,
     deadlines: parsed.value.deadlines,
     ics,
-    remaining: limit.remaining,
   };
   return new Response(JSON.stringify(payload), {
     status: 200,
@@ -116,14 +125,13 @@ async function handleTranslate(request: Request, env: Env, _ctx: ExecutionContex
 
 interface ParsedEnvelope {
   plainEnglish: string;
-  actionItems: string[];
-  deadlines: Array<{
-    what: string;
-    date: string | null;
-    dateDisplay: string;
-    notes?: string;
-  }>;
+  worstCase: string;
+  actionItems: ActionItem[];
+  deadlines: Deadline[];
 }
+
+const URGENCIES: ReadonlySet<Urgency> = new Set(['now', 'soon', 'info']);
+const SEVERITIES: ReadonlySet<Severity> = new Set(['critical', 'high', 'normal']);
 
 function parseEnvelope(raw: string): { ok: true; value: ParsedEnvelope } | { ok: false; reason: string } {
   let json: unknown;
@@ -137,20 +145,46 @@ function parseEnvelope(raw: string): { ok: true; value: ParsedEnvelope } | { ok:
   const j = json as Record<string, unknown>;
   const plainEnglish = typeof j.plainEnglish === 'string' ? j.plainEnglish.slice(0, 4000) : '';
   if (!plainEnglish) return { ok: false, reason: 'plainEnglish missing' };
-  const actionItems = Array.isArray(j.actionItems)
-    ? j.actionItems.filter((x) => typeof x === 'string').slice(0, 12).map((x) => String(x).slice(0, 400))
-    : [];
-  const rawDeadlines = Array.isArray(j.deadlines) ? j.deadlines : [];
-  const deadlines = rawDeadlines.slice(0, 20).map((d) => {
-    const e = (d && typeof d === 'object') ? d as Record<string, unknown> : {};
-    return {
+  const worstCase = typeof j.worstCase === 'string' ? j.worstCase.slice(0, 800) : '';
+  const actionItems = parseActionItems(j.actionItems);
+  const deadlines = parseDeadlines(j.deadlines);
+  return { ok: true, value: { plainEnglish, worstCase, actionItems, deadlines } };
+}
+
+function parseActionItems(raw: unknown): ActionItem[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ActionItem[] = [];
+  for (const item of raw.slice(0, 12)) {
+    // Backward compat: older prompt produced bare strings.
+    if (typeof item === 'string') {
+      out.push({ text: item.slice(0, 400), urgency: 'soon' });
+      continue;
+    }
+    if (!item || typeof item !== 'object') continue;
+    const e = item as Record<string, unknown>;
+    const text = typeof e.text === 'string' ? e.text.slice(0, 400) : '';
+    if (!text) continue;
+    const u = typeof e.urgency === 'string' ? e.urgency.toLowerCase() : 'soon';
+    out.push({ text, urgency: (URGENCIES.has(u as Urgency) ? u : 'soon') as Urgency });
+  }
+  return out;
+}
+
+function parseDeadlines(raw: unknown): Deadline[] {
+  if (!Array.isArray(raw)) return [];
+  const out: Deadline[] = [];
+  for (const item of raw.slice(0, 20)) {
+    const e = (item && typeof item === 'object') ? item as Record<string, unknown> : {};
+    const sev = typeof e.severity === 'string' ? e.severity.toLowerCase() : 'normal';
+    out.push({
       what: typeof e.what === 'string' ? String(e.what).slice(0, 300) : 'Deadline',
       date: typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) ? e.date : null,
       dateDisplay: typeof e.dateDisplay === 'string' ? String(e.dateDisplay).slice(0, 200) : '',
       notes: typeof e.notes === 'string' ? String(e.notes).slice(0, 400) : undefined,
-    };
-  });
-  return { ok: true, value: { plainEnglish, actionItems, deadlines } };
+      severity: (SEVERITIES.has(sev as Severity) ? sev : 'normal') as Severity,
+    });
+  }
+  return out;
 }
 
 function jsonError(status: number, message: string): Response {

@@ -4,13 +4,11 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>PlainOrder — Court orders, in plain English.</title>
-<meta name="description" content="Paste any court order. Get a plain-English explanation, a list of action items, and a calendar of every deadline. Not legal advice." />
+<meta name="description" content="Paste any court order or upload a PDF. Get a plain-English explanation, action items, a deadline timeline, and a calendar file. Not legal advice." />
 <meta property="og:title" content="PlainOrder" />
-<meta property="og:description" content="Court orders, in plain English. With deadlines, on a calendar." />
-<link rel="preconnect" href="https://cdn.tailwindcss.com" />
+<meta property="og:description" content="Court orders, in plain English. With a deadline timeline." />
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-  // Tailwind config kept inline so the page works without a build step.
   tailwind.config = {
     theme: {
       extend: {
@@ -30,29 +28,81 @@
   body { background: #fafaf7; color: #1a1a1a; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
   .doc { font-family: Georgia, Cambria, 'Times New Roman', serif; }
   textarea { resize: vertical; }
+
+  /* Drag-and-drop */
+  .drop-zone { border: 2px dashed #c4c4be; border-radius: 8px; transition: all .15s ease; }
+  .drop-zone.drag-over { border-color: #2c5e2e; background: #ecf6ec; }
+
+  /* Worst case alert */
+  .worst-case { background: #fdf2f2; border-left: 4px solid #c53030; }
+
+  /* Urgency badges */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; }
+  .badge-now { background: #fed7d7; color: #9b2c2c; }
+  .badge-soon { background: #feebc8; color: #9c4221; }
+  .badge-info { background: #e2e8f0; color: #4a5568; }
+
+  /* Timeline */
+  .timeline { position: relative; height: 84px; margin-top: 16px; }
+  .timeline-axis { position: absolute; left: 0; right: 0; top: 38px; height: 2px; background: #d4d4d0; }
+  .timeline-today { position: absolute; top: 18px; bottom: 18px; width: 2px; background: #1a1a1a; }
+  .timeline-today-label { position: absolute; transform: translateX(-50%); top: 0; font-size: 10px; color: #1a1a1a; font-weight: 600; }
+  .timeline-tick { position: absolute; transform: translateX(-50%); }
+  .timeline-dot { width: 14px; height: 14px; border-radius: 50%; margin-top: 31px; border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.2); }
+  .timeline-dot.critical { background: #c53030; }
+  .timeline-dot.high     { background: #d69e2e; }
+  .timeline-dot.normal   { background: #38a169; }
+  .timeline-label { position: absolute; transform: translateX(-50%); top: 56px; font-size: 10px; color: #555; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+  .timeline-label.below { top: 56px; }
+  .timeline-label.above { top: -2px; }
+
+  /* Deadline pills */
   .deadline-pill { background: #fff7e6; border: 1px solid #f0c674; }
-  .action-item::marker { color: #2c5e2e; font-weight: bold; }
-  .skeleton { background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%); background-size: 400% 100%; animation: shimmer 1.4s ease-in-out infinite; }
-  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+  .deadline-pill.critical { background: #fff5f5; border-color: #fc8181; }
+  .deadline-pill.high     { background: #fffaf0; border-color: #f6ad55; }
+  .deadline-pill.normal   { background: #f0fff4; border-color: #9ae6b4; }
+  .pill-sev { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; margin-right: 6px; }
+  .pill-sev.critical { background: #c53030; color: white; }
+  .pill-sev.high     { background: #d69e2e; color: white; }
+  .pill-sev.normal   { background: #38a169; color: white; }
+
+  /* Print mode */
+  @media print {
+    header, footer, #input-section, #statusBox, .no-print { display: none !important; }
+    body { background: white; color: black; }
+    main { max-width: none; padding: 0; }
+    #resultSection { display: block !important; }
+    .worst-case { border-left-width: 6px; padding: 16px; page-break-inside: avoid; }
+    .deadline-pill { page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body class="min-h-screen">
 <header class="max-w-3xl mx-auto px-4 pt-10 pb-6">
   <div class="flex items-baseline justify-between">
     <h1 class="text-3xl font-semibold tracking-tight">PlainOrder</h1>
-    <span class="text-xs text-gray-500">v0.1 · experimental</span>
+    <span class="text-xs text-gray-500">v0.2 · experimental</span>
   </div>
-  <p class="mt-2 text-gray-700 text-lg">Court orders, in plain English. With deadlines, on a calendar.</p>
+  <p class="mt-2 text-gray-700 text-lg">Court orders, in plain English. With a deadline timeline.</p>
 </header>
 
 <main class="max-w-3xl mx-auto px-4 pb-24">
   <!-- Disclaimer -->
   <div class="bg-yellow-50 border border-yellow-300 text-yellow-900 rounded-md p-3 text-sm mb-6">
-    <strong>Not legal advice.</strong> PlainOrder uses AI to summarize the document you paste. It can be wrong, and it does not know the rules of your specific court. If anything is unclear or important, talk to a lawyer or your local legal aid office before acting.
+    <strong>Not legal advice.</strong> PlainOrder uses AI to summarize the document you paste or upload. It can be wrong, and it does not know the rules of your specific court. If anything is unclear or important, talk to a lawyer or your local legal aid office before acting.
   </div>
 
   <!-- Input -->
   <section id="input-section">
+    <div id="dropZone" class="drop-zone p-4 mb-3 text-center cursor-pointer">
+      <input id="fileInput" type="file" accept="application/pdf,text/plain,.pdf,.txt" class="hidden" />
+      <p class="text-sm text-gray-700">
+        <button id="filePickBtn" type="button" class="underline text-accent font-medium">Upload a PDF or .txt</button>
+        <span class="text-gray-500"> or drag a file here. Or paste text below.</span>
+      </p>
+      <p id="fileStatus" class="text-xs text-gray-500 mt-1 hidden"></p>
+    </div>
+
     <label for="docInput" class="block font-medium mb-2">Paste the court document</label>
     <textarea id="docInput" rows="12"
       class="w-full p-3 border border-gray-300 rounded-md doc text-sm focus:outline-none focus:ring-2 focus:ring-accent"
@@ -65,7 +115,7 @@
         Translate
       </button>
     </div>
-    <p class="mt-2 text-xs text-gray-500">5 free translations per day. No login. We don't save your document.</p>
+    <p class="mt-2 text-xs text-gray-500">No login. Your document is sent to OpenRouter for the translation and not stored on our side. PDF text extraction happens in your browser — the PDF file itself never leaves your device.</p>
   </section>
 
   <!-- Status / Error -->
@@ -73,15 +123,40 @@
 
   <!-- Result -->
   <section id="resultSection" class="mt-10 hidden">
-    <h2 class="text-xl font-semibold mb-4 border-b pb-2">Your order, in plain English</h2>
+    <div class="flex items-center justify-between mb-4 border-b pb-2 no-print">
+      <h2 class="text-xl font-semibold">Your order, in plain English</h2>
+      <button id="printBtn" class="text-sm underline text-gray-600 hover:text-accent">Print / Save as PDF</button>
+    </div>
+
+    <!-- Worst case alert -->
+    <div id="worstCaseBlock" class="worst-case rounded-md p-4 mb-6 hidden">
+      <div class="flex items-start gap-2">
+        <span class="text-red-700 font-bold text-lg leading-none mt-0.5">⚠</span>
+        <div>
+          <div class="text-xs uppercase tracking-wide text-red-700 font-semibold mb-1">If you do nothing</div>
+          <div id="worstCaseText" class="text-sm text-red-900"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plain-English summary -->
     <div id="summaryBlock" class="prose max-w-none text-base leading-relaxed mb-8"></div>
 
-    <h3 class="text-lg font-semibold mb-3">What you need to do</h3>
-    <ol id="actionsList" class="list-decimal pl-6 space-y-2 mb-8 action-item"></ol>
+    <!-- Deadline timeline -->
+    <div id="timelineSection" class="mb-8 hidden">
+      <h3 class="text-lg font-semibold mb-2">Timeline</h3>
+      <div id="timeline" class="timeline"></div>
+      <p class="text-xs text-gray-500 mt-2">Critical = irreversible if missed. High = important right lost. Normal = procedural.</p>
+    </div>
 
+    <!-- Action items -->
+    <h3 class="text-lg font-semibold mb-3">What you need to do</h3>
+    <ol id="actionsList" class="list-decimal pl-6 space-y-2 mb-8"></ol>
+
+    <!-- Deadlines -->
     <h3 class="text-lg font-semibold mb-3">Deadlines</h3>
     <ul id="deadlinesList" class="space-y-2 mb-4"></ul>
-    <div id="icsBlock" class="hidden">
+    <div id="icsBlock" class="hidden no-print">
       <button id="downloadIcsBtn" class="text-sm underline text-accent hover:text-green-800">
         Download all deadlines as a calendar file (.ics)
       </button>
@@ -98,6 +173,13 @@
   <p class="mt-1">Need help? Find your nearest <a class="underline" href="https://www.lsc.gov/about-lsc/what-legal-aid/get-legal-help">legal aid office</a> (US).</p>
 </footer>
 
+<!-- pdf.js for client-side PDF text extraction. The PDF never leaves the browser. -->
+<script type="module">
+  import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs';
+  window.__pdfjsLib = pdfjsLib;
+  window.dispatchEvent(new Event('pdfjs-ready'));
+</script>
 <script src="/app.js"></script>
 </body>
 </html>
