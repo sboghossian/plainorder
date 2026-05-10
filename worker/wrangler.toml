@@ -13,12 +13,16 @@ compatibility_flags = ["nodejs_compat"]
 directory = "../public"
 binding = "ASSETS"
 
-# Per-IP rate limiting uses a KV namespace. Create it once with:
-#   wrangler kv namespace create RATELIMIT
-# then paste the returned id into the line below.
-# [[kv_namespaces]]
-# binding = "RATELIMIT"
-# id = "PASTE_KV_NAMESPACE_ID_HERE"
+[[kv_namespaces]]
+binding = "RATELIMIT"
+id = "fc126a9d38b54cd4bba925740f767b46"
+
+# Custom domain. Requires the dashable.dev zone to be in this Cloudflare
+# account. If deploy fails on this line, comment it out, ship to the
+# workers.dev URL, then add the route in the Cloudflare dashboard.
+[[routes]]
+pattern = "plainorder.dashable.dev"
+custom_domain = true
 
 # Secrets — set with:
 #   wrangler secret put OPENROUTER_API_KEY

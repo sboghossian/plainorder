@@ -127,8 +127,9 @@ interface ParsedEnvelope {
 
 function parseEnvelope(raw: string): { ok: true; value: ParsedEnvelope } | { ok: false; reason: string } {
   let json: unknown;
+  const candidate = extractJsonObject(raw);
   try {
-    json = JSON.parse(raw);
+    json = JSON.parse(candidate);
   } catch {
     return { ok: false, reason: 'not valid JSON' };
   }
@@ -162,4 +163,17 @@ function jsonError(status: number, message: string): Response {
 function stringifyErr(err: unknown): string {
   if (err instanceof Error) return err.message;
   return String(err).slice(0, 200);
+}
+
+// Defensive: some models wrap JSON in ```json ... ``` fences or add a
+// preamble. Strip fences first; if that fails, fall back to slicing
+// from the first '{' to the last '}'.
+function extractJsonObject(raw: string): string {
+  const trimmed = String(raw ?? '').trim();
+  const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenceMatch) return fenceMatch[1].trim();
+  const first = trimmed.indexOf('{');
+  const last = trimmed.lastIndexOf('}');
+  if (first >= 0 && last > first) return trimmed.slice(first, last + 1);
+  return trimmed;
 }

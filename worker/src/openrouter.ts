@@ -36,7 +36,10 @@ export async function translateDocument(env: OpenRouterEnv, documentText: string
     ],
     temperature: 0.2,
     max_tokens: 2000,
-    response_format: { type: 'json_object' },
+    // Note: response_format json_object isn't honored uniformly across
+    // OpenRouter providers (Anthropic in particular ignores it). The
+    // prompt enforces JSON-only output and the parser strips fences,
+    // so we don't need to set response_format here.
   };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
